@@ -64,13 +64,18 @@ func main() {
 
 		log.Fatalf("usage:%s listen-port serving-direcotry, example: %s 7878 d:/", os.Args[0], os.Args[0])
 	}
+	//check port
 	port, err := strconv.ParseInt(os.Args[1], 0, 16)
 	if err != nil {
 		log.Fatalf("port is not correct %s", os.Args[1])
 	}
+	//check path
 	root = os.Args[2]
-	if root == "" {
-		log.Fatalf("directory is not correct %s", os.Args[1])
+	if root == "" || strings.LastIndex(root, "/") != len(root)-1 {
+		log.Fatalf("directory is not correct %s or not end with / ", os.Args[1])
+	}
+	if _, err = os.Stat(root); err != nil {
+		log.Fatalf(" check direct stat error:%s", err.Error())
 	}
 
 	log.Printf(" server info{port:%d directory:%s}", port, root)
