@@ -14,6 +14,25 @@ var (
 	root string
 )
 
+type progressReader struct {
+	reader io.Reader
+	total  int64
+	count  int64
+}
+
+func (pr *progressReader) Read(p []byte) (int, error) {
+	n, err := pr.reader.Read(p)
+	if err != nil {
+		return n, err
+	}
+	pr.count += int64(n)
+	fmt.Fprintf(*writer, "Uploaded  %d %%  of %d M\r", (pr.count*100/pr.total + 1), pr.total/1024/1024)
+	fmt.Printf("Uploaded  %d %%  of %d M\r", (pr.count*100/pr.total + 1), pr.total/1024/1024)
+	return n, nil
+}
+
+var writer *http.ResponseWriter
+
 func upload(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("all headers", r.Header)
@@ -28,16 +47,22 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-
+	reader := &progressReader{
+		reader: r.Body,
+		total:  r.ContentLength,
+	}
+	writer = &w
 	// Copy the uploaded data into the new file
-	_, err = io.Copy(file, r.Body)
+	_, err = io.Copy(file, reader)
 	if err != nil {
 		log.Println("copy error", err.Error())
 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	fmt.Println("")
+	fmt.Println("upload over")
+	fmt.Fprintln(w, "")
 	// Respond with a success message
 	fmt.Fprintln(w, "File uploaded successfully!")
 
