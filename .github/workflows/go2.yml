@@ -7,12 +7,18 @@ on:
   workflow_dispatch
 
 jobs:
-  build:
+  trek_test:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v2
       run: echo "trek ok now"
+      shell: bash
+  trek_second:
+    runs-on: ubuntu-latest
+    steps:
+    - name: goodby trek
+      run: echo "good by trek"
       shell: bash
 
  
