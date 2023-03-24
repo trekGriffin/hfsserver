@@ -14,6 +14,10 @@ var (
 	root string
 )
 
+const (
+	version = 20230324
+)
+
 type progressReader struct {
 	reader io.Reader
 	total  int64
@@ -35,7 +39,7 @@ var writer *http.ResponseWriter
 
 func upload(w http.ResponseWriter, r *http.Request) {
 
-	log.Println("all headers", r.Header)
+	log.Println("new upload:", r.Header)
 	filename := strings.Replace(r.URL.Path, "/upload/", "", 1)
 
 	//save file
@@ -84,9 +88,13 @@ func delete(w http.ResponseWriter, r *http.Request) {
 	//todo delete file operation
 	fmt.Fprintf(w, " %s delted success", filename)
 }
-func main() {
-	if len(os.Args) != 3 {
 
+func main() {
+	if os.Args[1] == "-v" {
+		log.Println("version:", version)
+		return
+	}
+	if len(os.Args) != 3 {
 		log.Fatalf("usage:%s listen-port serving-direcotry, example: %s 7878 d:/", os.Args[0], os.Args[0])
 	}
 	//check port
