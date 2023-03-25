@@ -21,10 +21,15 @@ jobs:
     runs-on: windows-latest
     env:
       RELEASE_TAG: release-${{ github.sha }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
     # Your release steps here
     - name: Create Release
       uses: actions/create-release@v1
+      env:       
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ env.RELEASE_TAG }}
         release_name: Release ${{ env.RELEASE_TAG }}
