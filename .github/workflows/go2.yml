@@ -21,6 +21,7 @@ jobs:
     runs-on: windows-latest
     env:
       RELEASE_TAG: release-${{ github.sha }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
     # Your release steps here
     - name: Create Release
