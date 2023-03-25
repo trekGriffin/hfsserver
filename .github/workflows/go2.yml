@@ -6,21 +6,30 @@ on:
       - main
   workflow_dispatch:
 
+
 jobs:
-  trek_test:
-    runs-on: ubuntu-latest
+  build:
+    name: Build release
+    runs-on: windows-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-    - name: hello trek
-      run: echo "trek ok now"
-      shell: bash
-  trek_second:
-    runs-on: ubuntu-latest
+    # Your build steps here
+    - name: Test
+      run: echo "Testing..."
+  release:
+    name: Create release
+    needs: build
+    runs-on: windows-latest
+    env:
+      RELEASE_TAG: release-${{ github.sha }}
     steps:
-    - name: goodby trek
-      run: echo "good by trek"
-      shell: bash
+    # Your release steps here
+    - name: Create Release
+      uses: actions/create-release@v1
+      with:
+        tag_name: ${{ env.RELEASE_TAG }}
+        release_name: Release ${{ env.RELEASE_TAG }}
+        draft: false
+        prerelease: false
 
  
 
