@@ -1,17 +1,21 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
+	"time"
+
+	"code.cloudfoundry.org/bytefmt"
 )
 
 var (
-	root string
+	root      string
+	startTime int64
 )
 
 const (
@@ -26,24 +30,25 @@ type progressReader struct {
 
 func (pr *progressReader) Read(p []byte) (int, error) {
 	n, err := pr.reader.Read(p)
-	if err != nil {
-		return n, err
-	}
 	pr.count += int64(n)
-	fmt.Fprintf(*writer, "Uploaded  %d %%  of %d M\r", (pr.count*100/pr.total + 1), pr.total/1024/1024)
-	fmt.Printf("Uploaded  %d %%  of %d M\r", (pr.count*100/pr.total + 1), pr.total/1024/1024)
-	return n, nil
+	duration := time.Now().Unix() - startTime
+	if duration != 0 {
+		speed := bytefmt.ByteSize(uint64(pr.count / duration))
+		output := fmt.Sprintf("Uploaded  %d %%  %s of %s, speed:%s duration:%s  \r",
+			(pr.count * 100 / pr.total), bytefmt.ByteSize(uint64(pr.count)), bytefmt.ByteSize(uint64(pr.total)), speed, time.Duration(duration*1000*1000*1000))
+		fmt.Println(output)
+		fmt.Fprint(*writer, output)
+	}
+
+	return n, err
 }
 
 var writer *http.ResponseWriter
 
 func upload(w http.ResponseWriter, r *http.Request) {
 
-	log.Println("new upload:", r.Header)
 	filename := strings.Replace(r.URL.Path, "/upload/", "", 1)
-
-	//save file
-
+	log.Println("new upload file name", filename)
 	file, err := os.Create(root + filename)
 	if err != nil {
 		log.Println("create error", err.Error())
@@ -56,7 +61,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		total:  r.ContentLength,
 	}
 	writer = &w
-	// Copy the uploaded data into the new file
+	startTime = time.Now().Unix()
 	_, err = io.Copy(file, reader)
 	if err != nil {
 		log.Println("copy error", err.Error())
@@ -67,17 +72,13 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("")
 	fmt.Println("upload over")
 	fmt.Fprintln(w, "")
-	// Respond with a success message
+
 	fmt.Fprintln(w, "File uploaded successfully!")
 
 }
 
 func delete(w http.ResponseWriter, r *http.Request) {
 	filename := strings.Replace(r.URL.Path, "/delete/", "", 1)
-	// if _, err := os.Stat(root + path); err != nil {
-	// 	fmt.Fprintf(w, "delete %s error: file not exist", root+path)
-	// 	return
-	// }
 
 	err := os.Remove(root + filename)
 	if err != nil {
@@ -90,38 +91,31 @@ func delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	if os.Args[1] == "-v" {
-		log.Println("version:", version)
+	showVersion := false
+	var address string
+	flag.BoolVar(&showVersion, "v", false, "show verison")
+	flag.StringVar(&address, "a", "10.10.10.3:80", "bind address and port")
+	flag.StringVar(&root, "p", "./", " serving directory")
+
+	flag.Parse()
+	if showVersion {
+		fmt.Println("version:", version)
 		return
 	}
-	if len(os.Args) != 3 {
-		log.Fatalf("usage:%s listen-port serving-direcotry, example: %s 7878 d:/", os.Args[0], os.Args[0])
-	}
-	//check port
-	port, err := strconv.ParseInt(os.Args[1], 0, 16)
-	if err != nil {
-		log.Fatalf("port is not correct %s", os.Args[1])
-	}
+
 	//check path
-	root = os.Args[2]
-	if root == "" || strings.LastIndex(root, "/") != len(root)-1 {
-		log.Fatalf("directory is not correct %s or not end with / ", os.Args[1])
-	}
-	if _, err = os.Stat(root); err != nil {
+
+	if _, err := os.Stat(root); err != nil {
 		log.Fatalf(" check direct stat error:%s", err.Error())
 	}
 
-	log.Printf(" server info{port:%d directory:%s}", port, root)
+	log.Printf(" server info{port:%s directory:%s}", address, root)
 	http.HandleFunc("/upload/", upload)
 	http.HandleFunc("/delete/", delete)
 	http.Handle("/", http.FileServer(http.Dir(root)))
 
 	log.Println("server is running")
 
-	err := http.ListenAndServe(address, nil)
-
-	if err != nil {
-		log.Fatal("server listen error", err)
-	}
+	log.Fatal(http.ListenAndServe(address, nil))
 
 }
