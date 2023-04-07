@@ -1,17 +1,21 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 )
 
 var (
 	root string
+)
+
+const (
+	version = 20230324
 )
 
 type progressReader struct {
@@ -35,7 +39,7 @@ var writer *http.ResponseWriter
 
 func upload(w http.ResponseWriter, r *http.Request) {
 
-	log.Println("all headers", r.Header)
+	log.Println("new upload:", r.Header)
 	filename := strings.Replace(r.URL.Path, "/upload/", "", 1)
 
 	//save file
@@ -84,12 +88,30 @@ func delete(w http.ResponseWriter, r *http.Request) {
 	//todo delete file operation
 	fmt.Fprintf(w, " %s delted success", filename)
 }
+
 func main() {
-	var address, root string
-	flag.StringVar(&address, "a", "10.10.10.3:80", "address for this host")
-	flag.StringVar(&root, "d", "./", "directory for this hfs")
-	flag.Parse()
-	log.Printf(" server info{address:%s directory:%s}", address, root)
+	if os.Args[1] == "-v" {
+		log.Println("version:", version)
+		return
+	}
+	if len(os.Args) != 3 {
+		log.Fatalf("usage:%s listen-port serving-direcotry, example: %s 7878 d:/", os.Args[0], os.Args[0])
+	}
+	//check port
+	port, err := strconv.ParseInt(os.Args[1], 0, 16)
+	if err != nil {
+		log.Fatalf("port is not correct %s", os.Args[1])
+	}
+	//check path
+	root = os.Args[2]
+	if root == "" || strings.LastIndex(root, "/") != len(root)-1 {
+		log.Fatalf("directory is not correct %s or not end with / ", os.Args[1])
+	}
+	if _, err = os.Stat(root); err != nil {
+		log.Fatalf(" check direct stat error:%s", err.Error())
+	}
+
+	log.Printf(" server info{port:%d directory:%s}", port, root)
 	http.HandleFunc("/upload/", upload)
 	http.HandleFunc("/delete/", delete)
 	http.Handle("/", http.FileServer(http.Dir(root)))
