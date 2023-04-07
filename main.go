@@ -14,12 +14,9 @@ import (
 )
 
 var (
-	root      string
-	startTime int64
-)
-
-const (
+	root       string
 	appVersion = "unknown"
+	startTime  int64
 )
 
 type progressReader struct {
