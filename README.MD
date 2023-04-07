@@ -16,10 +16,13 @@ curl -T  1.txt http://ip:port/upload/1.txt
 curl http://ip:port/delete/1.txt
 
 # update
+* 230407.2
+fix appVersion
 * 230407.1
 fix to real vcs
 get file name from the local file other than from the url.
 show the precise speed of uploading files.
+
 
 * 1.0.2
 bind the ip address for the software.(for security)

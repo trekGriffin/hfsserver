@@ -19,7 +19,7 @@ var (
 )
 
 const (
-	version = 20230324
+	appVersion = "unknown"
 )
 
 type progressReader struct {
@@ -99,7 +99,7 @@ func main() {
 
 	flag.Parse()
 	if showVersion {
-		fmt.Println("version:", version)
+		fmt.Println("version:", appVersion)
 		return
 	}
 
