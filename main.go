@@ -4,10 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"code.cloudfoundry.org/bytefmt"
@@ -44,7 +44,8 @@ var writer *http.ResponseWriter
 
 func upload(w http.ResponseWriter, r *http.Request) {
 
-	filename := strings.Replace(r.URL.Path, "/upload/", "", 1)
+	//filename := strings.Replace(r.URL.Path, "/upload/", "", 1)
+	filename := r.URL.Path
 	log.Println("new upload file name", filename)
 	file, err := os.Create(root + filename)
 	if err != nil {
@@ -75,8 +76,8 @@ func upload(w http.ResponseWriter, r *http.Request) {
 }
 
 func delete(w http.ResponseWriter, r *http.Request) {
-	filename := strings.Replace(r.URL.Path, "/delete/", "", 1)
-
+	//filename := strings.Replace(r.URL.Path, "/delete/", "", 1)
+	filename := r.URL.Path
 	err := os.Remove(root + filename)
 	if err != nil {
 		log.Println("delete  error: ", filename, err.Error())
@@ -85,6 +86,38 @@ func delete(w http.ResponseWriter, r *http.Request) {
 	}
 	//todo delete file operation
 	fmt.Fprintf(w, " %s delted success", filename)
+}
+func get(w http.ResponseWriter, r *http.Request) {
+	filename := r.URL.Path
+	if filename == "/" {
+		files, err := ioutil.ReadDir(root)
+		if err != nil {
+			w.Write([]byte(err.Error()))
+			return
+		}
+		for _, file := range files {
+			w.Write([]byte(file.Name()))
+		}
+	} else {
+		content, err := ioutil.ReadFile(root + filename)
+		if err != nil {
+			w.Write([]byte("file not exist " + err.Error()))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Write(content)
+	}
+}
+
+func dispatcher(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "DELETE" {
+		delete(w, r)
+	} else if r.Method == "PUT" {
+		upload(w, r)
+	} else if r.Method == "GET" {
+		get(w, r)
+	}
 }
 
 func main() {
@@ -107,9 +140,11 @@ func main() {
 	}
 
 	log.Printf(" server info{port:%s directory:%s}", address, root)
-	http.HandleFunc("/upload/", upload)
-	http.HandleFunc("/delete/", delete)
-	http.Handle("/", http.FileServer(http.Dir(root)))
+	// http.HandleFunc("/upload/", upload)
+	// http.HandleFunc("/delete/", delete)
+	http.HandleFunc("/", dispatcher)
+
+	//http.Handle("/", http.FileServer(http.Dir(root)))
 
 	log.Println("server is running")
 

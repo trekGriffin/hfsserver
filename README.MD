@@ -3,25 +3,29 @@
 # simple http file system  with curl
 usage: hfsserver port directory
 
+## list files
+curl http://ip:port/
+
 ## get a file
-1. open url in the browser: http://ip:port/
-
-2. curl curl -O http://ip:port/1.txt
-
+curl -O http://ip:port/1.txt
 
 ## post a file
-curl -T  1.txt http://ip:port/upload/1.txt
+curl -T  1.txt http://ip:port/
 
 ## delete a file
-curl http://ip:port/delete/1.txt
+curl -X DELETE http://ip:port/1.txt
 
 # update
-* 230407.2
-fix appVersion
-* 230407.1
-fix to real vcs
-get file name from the local file other than from the url.
-show the precise speed of uploading files.
+## 230505.1
+* allow curl -X "method" to unify the operation
+
+## 230407.2
+* fix appVersion
+
+## 230407.1
+* change to real vcs
+* get file name from the local file other than from the url.
+* show the precise speed of uploading files.
 
 
 * 1.0.2
